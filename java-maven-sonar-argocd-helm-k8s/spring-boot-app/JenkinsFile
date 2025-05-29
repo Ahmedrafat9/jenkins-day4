@@ -19,22 +19,27 @@ pipeline {
       }
     }
     stage('Static Code Analysis') {
-      environment {
-        SONAR_URL = "http://52.23.247.147:9000"
-      }
       steps {
-        withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_AUTH_TOKEN')]) {
-          sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+        withSonarQubeEnv('SonarQubeServerName') { // Replace 'SonarQube' with the actual name of your SonarQube server in Jenkins
+          withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_AUTH_TOKEN')]) {
+            sh '''
+              cd java-maven-sonar-argocd-helm-k8s/spring-boot-app
+              mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN
+            '''
+          }
         }
       }
     }
+
     stage('Quality Gate') {
-  steps {
-    script {
-      def qualityGate = waitForQualityGate()
-      echo "SonarQube Quality Gate status: ${qualityGate.status}"
-      if (qualityGate.status != 'OK') {
-        error "Pipeline failed due to quality gate: ${qualityGate.status}"
+      steps {
+        script {
+          timeout(time: 2, unit: 'MINUTES') { // Optional: avoid indefinite waiting
+            def qualityGate = waitForQualityGate()
+            echo "SonarQube Quality Gate status: ${qualityGate.status}"
+            if (qualityGate.status != 'OK') {
+              error "Pipeline failed due to quality gate: ${qualityGate.status}"
+            }
           }
         }
       }
