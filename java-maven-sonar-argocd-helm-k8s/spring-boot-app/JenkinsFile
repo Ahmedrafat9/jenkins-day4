@@ -8,8 +8,7 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        cleanWs() // wipe workspace before checkout
-        git branch: 'main', url: 'https://github.com/Ahmedrafat9/jenkins-day4.git'
+        sh 'echo passed'
       }
     }
     stage('Build and Test') {
